@@ -3,9 +3,6 @@
 # ansible-role-sip-proxy
 This ansible role installs a SIP and RTP proxy to load balance multiple SIP Servers. This is accomplished using open source sip server [Kamailio](https://github.com/kamailio/kamailio) and [RTPProxy](https://github.com/sippy/rtpproxy)
 
-## To Do
- - molecule testing is broken on centos7
-
 ## Requirements
 Kamailio requires a database to maintain call state and routing destinations, this ansible role assumes this will be a remote PostgreSQL instance
 - PostgreSQL instance
@@ -292,3 +289,6 @@ example to admin down a target
 ```
 kamcmd dispatcher.set_state dx 1 sip:10.0.0.3:5080;transport=tcp
 ```
+
+## To Do
+ - molecule testing is broken on centos7
