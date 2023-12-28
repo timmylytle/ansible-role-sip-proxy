@@ -1,0 +1,29 @@
+---
+# Install dependencies
+- name: Install Repo Dependencies (RedHat).
+  become: true
+  yum:
+    update_cache: true
+    state: present
+    name: "{{ redhat_dep_packages_repo }}"
+  register: _install_dep_packages_repo_redhat
+  until: _install_dep_packages_repo_redhat is success
+  retries: 5
+  delay: 2
+  notify:
+    - restart kamailio
+    - restart rtpproxy
+
+- name: Install Package Dependencies (RedHat).
+  become: true
+  yum:
+    update_cache: true
+    state: present
+    name: "{{ redhat_dep_packages }}"
+  register: _install_dep_packages_redhat
+  until: _install_dep_packages_redhat is success
+  retries: 5
+  delay: 2
+  notify:
+    - restart kamailio
+    - restart rtpproxy

@@ -1,0 +1,7 @@
+---
+# vars file for proxy
+kamailio_dest_directory: /usr/local/src/kamailio-{{ kamailio_version }}
+kamailio_bin: /usr/local/sbin/kamailio
+
+rtpproxy_dest_directory: /usr/local/src/rtpproxy
+rtpproxy_bin: /usr/local/bin/rtpproxy

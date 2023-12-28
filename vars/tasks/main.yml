@@ -1,0 +1,113 @@
+---
+# tasks file for sip-proxy
+
+# Install Dependencies
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags:
+    - kamailio
+    - rtpproxy
+
+- name: Install dependencies (RedHat).
+  include: prep-RedHat.yml
+  when: ansible_os_family == 'RedHat'
+  tags:
+    - kamailio
+    - rtpproxy
+    - database
+
+- name: Install dependencies (Debian).
+  include: prep-Debian.yml
+  when: ansible_os_family == 'Debian'
+  tags:
+    - kamailio
+    - rtpproxy
+    - database
+
+# Check for previously installed Kamailio and RTPProxy
+- name: Check for existing Kamailio binary.
+  stat:
+    path: "{{ kamailio_bin }}"
+  register: _kamailio_install
+  tags: kamailio
+
+- name: Check Kamailio version.
+  command: "{{ kamailio_bin }} --version"
+  register: _kamailio_version
+  when: "_kamailio_install.stat.exists"
+  changed_when: false
+  failed_when: false
+  tags: kamailio
+
+- name: Check for existing RTPProxy binary.
+  stat:
+    path: "{{ rtpproxy_bin }}"
+  register: _rtpproxy_install
+  tags: rtpproxy
+
+# Check Database Configuration
+- name: Check if Database '{{ db_kam }}' exists.
+  command: "psql postgres://{{ dbuser_root }}:{{ dbpass_root }}@{{ dbhost }}:{{ dbport }}/{{ db_root }} -c \"\\list\" | grep {{ db_kam }}"
+  changed_when: false
+  register: _db_kam
+
+- name: Check if user {{ dbuser_kam }} exists.
+  command: "psql postgres://{{ dbuser_root }}:{{ dbpass_root }}@{{ dbhost }}:{{ dbport }}/{{ db_root }} -c \"\\du\" | grep {{ dbuser_kam }}"
+  changed_when: false
+  when: "db_kam in _db_kam.stdout"
+  register: _dbuser_kam
+
+- name: Check if dispatcher table exists.
+  command: "psql postgres://{{ dbuser_kam }}:{{ dbpass_kam }}@{{ dbhost }}:{{ dbport }}/{{ db_kam }} -c \"\\dt\" | grep dispatcher"
+  changed_when: false
+  when: "db_kam in _db_kam.stdout and dbuser_kam in _dbuser_kam.stdout"
+  register: _dbtable_kam
+
+# Install Kamailio and RTPProxy
+- name: Install RTPProxy.
+  include: install_rtpproxy.yml
+  when: "not _rtpproxy_install.stat.exists"
+  tags:
+    - rtpproxy
+
+- name: Install Kamailio.
+  include: install_kamailio.yml
+  when: "not _kamailio_install.stat.exists or kamailio_version is not defined or kamailio_version|string not in _kamailio_version.stdout"
+  tags:
+    - kamailio
+
+# Configure Kamailio Database
+- name: Configure Kamailio database.
+  include: configure_database.yml
+  when: "db_kam not in _db_kam.stdout or dbuser_kam not in _dbuser_kam.stdout or 'dispatcher' not in _dbtable_kam.stdout"
+  tags:
+    - kamailio
+    - database
+
+# Generate Configuration files
+- name: Configure RTPProxy.
+  include: configure_rtpproxy.yml
+  tags:
+    - rtpproxy
+
+- name: Configure Kamailio.
+  include: configure_kamailio.yml
+  tags:
+    - kamailio
+
+- name: Create dispatcher destinations SQL script.
+  template:
+    src: dispatcher-list.sql.j2
+    dest: "/usr/local/etc/kamailio/dispatcher.list.sql"
+    owner: root
+    group: root
+    mode: 0644
+  register: _dispatcher_destinations
+
+- name: Update dispatcher table.
+  command: "psql postgres://{{ dbuser_kam }}:{{ dbpass_kam }}@{{ dbhost }}:{{ dbport }}/{{ db_kam }} -f '/usr/local/etc/kamailio/dispatcher.list.sql'"
+  changed_when: true
+  when: _dispatcher_destinations.changed
+  run_once: true
+  notify:
+    - restart kamailio

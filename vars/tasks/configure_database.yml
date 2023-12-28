@@ -1,0 +1,25 @@
+---
+# Create config file that will define the DB Engine
+- name: Create kamctlrc config file.
+  template:
+    src: kamctlrc.j2
+    dest: /usr/local/etc/kamailio/kamctlrc
+    owner: root
+    group: root
+    mode: 0644
+
+# Create Authentication file for access to postgres database
+- name: Create .pgpass file.
+  template:
+    src: .pgpass.j2
+    dest: ~/.pgpass
+    owner: root
+    group: root
+    mode: 0600
+
+# Run kamdbctl to setup kamailio database
+- name: Create Kamailio database.
+  become: true
+  command: "/usr/local/sbin/kamdbctl create {{ db_kam }}"
+  run_once: true
+  changed_when: true

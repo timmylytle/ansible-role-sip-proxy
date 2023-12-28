@@ -1,7 +1,5 @@
 # ansible-role-sip-proxy
-
-# ansible-role-sip-proxy
-This ansible role installs a SIP and RTP proxy to load balance multiple SIP Servers. This is accomplished using open source sip server [Kamailio](https://github.com/kamailio/kamailio) and [RTPProxy](https://github.com/sippy/rtpproxy)
+This ansible role installs a SIP and RTP proxy to load balance multiple Miarec recorders. This is accomplished using open source sip server [Kamailio](https://github.com/kamailio/kamailio) and [RTPProxy](https://github.com/sippy/rtpproxy)
 
 ## Requirements
 Kamailio requires a database to maintain call state and routing destinations, this ansible role assumes this will be a remote PostgreSQL instance
@@ -9,17 +7,17 @@ Kamailio requires a database to maintain call state and routing destinations, th
 - Postgresql user with permission to create users and databases
 
 ## Architecture and Key Functions
-Kamailio and RTPProxy will act as a SIP and RTP Proxy between Voice Platforms and SIP Servers
+Kamailio and RTPProxy will act as a SIP and RTP Proxy between Voice Platforms and MiaRec Recorders
 
 ```
       Internet           \        Private Subnet (NAT'd)         \        Private Subnet
                          \                                       \                   +-----------------+
-                         \                                       \     +------------>| SIP Server      |
+                         \                                       \     +------------>| MiaRec Recorder |
                          \                                       \     |  SIP/RTP    +-----------------+
                          \                 +----------------+    \     |
                     +---------+  SIP/RTP   |                |----\-----+
  {   Voice  }-------| NAT GW  |----------->|  Kamailio /    |    \     |             +-----------------+
- { Provider }       +---------+            |    RTPProxy    |    \     +------------>| SIP Server      |
+ { Platform }       +---------+            |    RTPProxy    |    \     +------------>| MiaRec Recorder |
                          \                 |                |    \        SIP/RTP    +-----------------+
                          \                 +----------------+    \
                          \                               |       \                      +--------------+
@@ -54,9 +52,9 @@ Environment='OPTIONS= -f -A 1.2.3.4 -F -l 10.0.0.10 -m 20000 -M 30000 -s udp:*:7
 ```
 
 ### LoadBalancing
-Calls are loadbalanceed between sip server instances using the [`dispatcher module`](https://kamailio.org/docs/modules/4.3.x/modules/dispatcher.html).
+Calls are loadbalanceed between Recorder instances using the [`dispatcher module`](https://kamailio.org/docs/modules/4.3.x/modules/dispatcher.html).
 
-Loadbalancing is affected by several variables, listed [below](./README.md#loadbalancing-1). By default, calls are distributed equally to all sip servers round-robin style
+Loadbalancing is affected by several variables, listed [below](./README.md#loadbalancing-1). By default, calls are distributed equally to all recorders round-robin style
 
 `dispatcher` module config is defined in '/usr/local/src/kamailio-5.5/kamailio/kamilio.cfg' and in the `dispatcher table` in the postgreSQL database
 
@@ -90,8 +88,8 @@ Example output of  kamailio/dispatcher
 kamailio=> SELECT * FROM dispatcher;
  id | setid |           destination            | flags | priority | attrs |        description
 ----+-------+----------------------------------+-------+----------+-------+---------------------------
-  1 |     1 | sip:10.0.0.10:5080;transport=tcp |     0 |        0 |       | sipserver0
-  2 |     1 | sip:10.0.0.11:5080;transport=tcp |     0 |        0 |       | sipserver1
+  1 |     1 | sip:10.0.0.10:5080;transport=tcp |     0 |        0 |       | recorder0
+  2 |     1 | sip:10.0.0.11:5080;transport=tcp |     0 |        0 |       | recorder1
 (2 rows)
 ```
 ## Role Varialbles
@@ -123,7 +121,7 @@ dbpass_root = secert
 - `kamailio_version` version of kamailio to installed, default = 5.5, Kamailio Branches listed [here](https://github.com/kamailio/kamailio/branches)
 
 #### Database
-- `db_root` name of root database, used for inital creation of kamailio databse default = 'kambd'
+- `db_root` name of root database, used for inital creation of kamailio databse default = 'miarecdb'
 - `dbport` tcp port where postgresQL instance is listening, default = 5432
 - `db_kam` name of database that will be created, default = 'kamailio'
 - `dbuser_kam` username that kamailio modules will with to access PostgreSQL database, default = 'kamailio'
@@ -142,11 +140,11 @@ dbpass_root = secert
 - `disp_set` dispatcher set - a partition name followed by colon and an id of the set or a list of sets from where to pick up destination address
 - `disp_alg` disaptcher alg - the algorithm(s) used to select the destination address (variables are accepted)
 
-#### sip server hostvars for loadbalancing
+#### Recorder hostvars for loadbalancing
 
-The following varaibles apply to individual sip server hosts and effect how the sip proxy will interact with them, [additional documenation here](https://kamailio.org/docs/modules/4.3.x/modules/dispatcher.html#idp51005116)
+The following varaibles apply to individual recorder hosts and effect how the sip proxy will interact with them, [additional documenation here](https://kamailio.org/docs/modules/4.3.x/modules/dispatcher.html#idp51005116)
 
-- `siprec_port` port sip server will be listening on, default = '5080'
+- `siprec_port` port recorder will be listening on, default = '5080'
 - `siprec_protocol` tcp or udp, default = 'tcp'
 - `siprec_flags` Various flags that affect dispatcher's behaviour, default = '0'
 - `siprec_priority` sets the priority in destination list (based on it is done the initial ordering inside the set), default = '0'
@@ -196,7 +194,7 @@ Example Playbook
           flags: "{{ hostvars[item].siprec_flags | default('0') }}"
           priority: "{{ hostvars[item].siprec_priority | default('0') }}"
           attrs: "{{ hostvars[item].siprec_attrs | default('') }}"
-      with_items: "{{ groups.sipserver }}"
+      with_items: "{{ groups.recorder }}"
       register: _tmp_dispatch_dest
     - set_fact:
         dispatcher_destinations: "{{ _tmp_dispatch_dest.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts.tmp_dest') | list }}"
@@ -210,12 +208,12 @@ Example Inventory
 [all]
 sipproxy0 ansible_host=10.0.0.1 public_ip_address=1.2.3.4 private_ip_address=10.0.0.1
 sipproxy1 ansible_host=10.0.0.2 public_ip_address=5.6.7.8 private_ip_address=10.0.0.2
-sipserver0 ansible_host=10.0.0.3 private_ip_address=10.0.0.3 siprec_port=5060 siprec_protocol=udp siprec_attrs='weight=75'
-sipserver1 ansible_host=10.0.0.4 private_ip_address=10.0.0.4 siprec_attrs='weight=25'
+recorder0 ansible_host=10.0.0.3 private_ip_address=10.0.0.3 siprec_port=5060 siprec_protocol=udp siprec_attrs='weight=75'
+recorder1 ansible_host=10.0.0.4 private_ip_address=10.0.0.4 siprec_attrs='weight=25'
 
-[sipserver]
-sipserver0
-sipserver1
+[recorder]
+recorder0
+recorder1
 
 [sipproxy]
 sipproxy0
@@ -232,8 +230,8 @@ debug_level = 3
 `kamctl dispatcher show` - will show what is in the dispatcher table in kamailio database
 output:
 ```-e dispatcher gateways
-1|1|sip:10.0.0.3:5060;transport=udp|0|0|weight=75|sipserver0
-2|1|sip:10.0.0.4:5080;transport=tcp|0|0|weight=25|sipserver1
+1|1|sip:10.0.0.3:5060;transport=udp|0|0|weight=75|recorder0
+2|1|sip:10.0.0.4:5080;transport=tcp|0|0|weight=25|recorder1
 ```
 
 `kamcmd dispatcher.reload` - this will restart the dispatcher module, this is required anytime changes are made to the disaptcher table
@@ -289,6 +287,3 @@ example to admin down a target
 ```
 kamcmd dispatcher.set_state dx 1 sip:10.0.0.3:5080;transport=tcp
 ```
-
-## To Do
- - molecule testing is broken on centos7

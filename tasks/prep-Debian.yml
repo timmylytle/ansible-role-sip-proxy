@@ -1,0 +1,11 @@
+---
+# Install dependencies
+- name: Install Package Dependencies (Debian).
+  become: true
+  apt:
+    update_cache: true
+    state: present
+    pkg: "{{ debian_dependencies }}"
+  notify:
+    - restart kamailio
+    - restart rtpproxy

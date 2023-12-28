@@ -1,0 +1,38 @@
+---
+# defaults file for proxy
+# https://github.com/kamailio/kamailio/tags
+kamailio_version: 5.5.4
+
+# database variables
+dbuser_root: 'dbuser'
+db_root: 'rootdb'
+dbport: 5432
+db_kam: kamailio
+dbuser_kam: kamailio
+dbpass_kam: kamailiorw
+
+# Conenction Variables
+sip_tcp_port: 5080
+sip_udp_port: 5080
+rtp_start: 20000
+rtp_stop: 30000
+tcp_max_connections: 2048
+tcp_connection_lifetime: 3605
+
+# Dispatcher Variables
+disp_set: 1
+disp_alg: 4
+
+# Configuration variables
+enable_debug: false
+debug_level: 2
+log_stderror: "no"
+enable_jsonrpc: false
+enable_tls: false
+tls_max_connections: 2048
+enable_anitflood: true
+pike_sample_time: 2
+pike_reqs_density: 30
+pike_remove_latency: 120
+ipban_expire: 300
+enable_nat_keepalive: false

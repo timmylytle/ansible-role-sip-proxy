@@ -1,0 +1,52 @@
+---
+# Create User and Group
+- name: Create RTPProxy group.
+  group:
+    name: rtpproxy
+    state: present
+    system: true
+
+- name: Create the RTPProxy user.
+  user:
+    name: rtpproxy
+    groups: rtpproxy
+    append: true
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+    home: /
+
+# Create Directory and Clone Repo
+- name: RTPProxy Create directory for source code.
+  file:
+    path: "{{ rtpproxy_dest_directory }}"
+    state: directory
+    mode: 0755
+
+- name: Clone RTPProxy repository.
+  git:
+    repo: https://github.com/sippy/rtpproxy.git
+    dest: "{{ rtpproxy_dest_directory }}/rtpproxy"
+    recursive: true
+    clone: true
+
+# Compile Files
+- name: Compile RTPProxy build files (Debian).
+  shell: "{{ item }}"
+  with_items:
+    - "cd {{ rtpproxy_dest_directory }}/rtpproxy && ./configure"
+    - "cd {{ rtpproxy_dest_directory }}/rtpproxy && make all"
+    - "cd {{ rtpproxy_dest_directory }}/rtpproxy && make install"
+  when: ansible_os_family == 'Debian'
+  notify:
+    - restart rtpproxy
+
+- name: Compile RTPProxy build files (RedHat).
+  shell: "{{ item }}"
+  with_items:
+    - "cd {{ rtpproxy_dest_directory }}/rtpproxy && ./configure"
+    - "cd {{ rtpproxy_dest_directory }}/rtpproxy && scl enable devtoolset-7 -- make all"
+    - "cd {{ rtpproxy_dest_directory }}/rtpproxy && scl enable devtoolset-7 -- make install"
+  when: ansible_os_family == 'RedHat'
+  notify:
+    - restart rtpproxy

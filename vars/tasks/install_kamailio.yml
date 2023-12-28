@@ -1,0 +1,42 @@
+---
+# Create User and Group
+- name: Create Kamailio group.
+  group:
+    name: kamailio
+    state: present
+    system: true
+
+- name: Create Kamailio user.
+  user:
+    name: kamailio
+    groups: kamailio
+    append: true
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+    home: /
+
+# GIT source code
+- name: Create directory for Kamailio source code.
+  file:
+    path: "{{ kamailio_dest_directory }}"
+    state: directory
+    mode: 0755
+
+- name: Clone Kamailio repository.
+  git:
+    repo: git://git.kamailio.org/kamailio
+    dest: "{{ kamailio_dest_directory }}/kamailio"
+    recursive: false
+    clone: true
+    version: origin/{{ kamailio_version }}
+
+# Compile Build Files
+- name: Compile Kamailio build files.
+  shell: "{{ item }}"
+  with_items:
+    - "cd {{ kamailio_dest_directory }}/kamailio && make include_modules='db_postgres' cfg"
+    - "cd {{ kamailio_dest_directory }}/kamailio && make all"
+    - "cd {{ kamailio_dest_directory }}/kamailio && make install"
+  notify:
+    - restart kamailio
