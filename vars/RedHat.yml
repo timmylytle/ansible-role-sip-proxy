@@ -1,0 +1,33 @@
+---
+redhat_dep_packages_repo:
+  - epel-release
+  - centos-release-scl
+
+redhat_dep_packages:
+  - make
+  - "@Development tools"
+  - bison
+  - pcre-devel
+  - libpcap-devel
+  - flex
+  - git
+  - libevent
+  - json*
+  - libunistring-devel
+  - webkitgtk3-devel
+  - perl
+  - librabbitmq
+  - libevent-devel
+  - librabbitmq-devel
+  - perl-devel
+  - mod_perl-devel
+  - perl-Encode-devel
+  - perl-Qt-devel
+  - perl-Glib-devel
+  - perl-Tk-devel
+  - libpq5
+  - devtoolset-7-gcc
+  - devtoolset-7-gcc-c++
+  - devtoolset-7-binutils
+  - postgresql
+  - postgresql-devel

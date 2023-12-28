@@ -1,0 +1,106 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  vars_files:
+   - vars/sipproxy.yml
+  tasks:
+   - name: Test Setup (Debian).
+     block:
+      - name: Test Setup - Install depedencies (Debian).
+        apt:
+         update_cache: true
+         name: "{{ item }}"
+         state: present
+        with_items:
+         - postgresql
+         - python3-pip
+
+      - name: Test Setup - Install psycopg2.
+        pip: name=psycopg2-binary
+
+      - name: Test Setup - Start Postgres Service (Debian).
+        service:
+         name: postgresql
+         state: started
+
+     when: ansible_os_family == "Debian"
+     become: true
+
+   - name: Test Setup (RedHat).
+     block:
+      - name: Test Setup - Install depedencies (RedHat).
+        become: true
+        yum:
+         update_cache: true
+         name: "{{ item }}"
+         state: present
+        with_items:
+         - ca-certificates
+         - python-psycopg2
+         - python-pycurl
+         - glibc-common
+         - epel-release
+         - libselinux-python
+
+      - name: Test Setup - Add PostgreSQL repo (RedHat).
+        become: true
+        yum_repository:
+         name: postgresql
+         description: postgresql yum repo
+         baseurl: "http://yum.postgresql.org/12/{{ ansible_os_family | lower }}/rhel-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}"
+         gpgkey: "https://download.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG-12"
+
+      - name: Test Setup - Install PostgreSQL (RedHat).
+        become: true
+        yum:
+         update_cache: true
+         name: "{{ item }}"
+         state: present
+        with_items:
+         - postgresql12-server
+         - postgresql12
+         - postgresql12-contrib
+        register: _postgresql_install
+
+      - name: Test Setup - Init PostgreSQL DB (RedHat)
+        become: true
+        command: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
+        when: _postgresql_install.changed
+
+      - name: Test Setup - Start Postgres Service (RedHat).
+        service:
+         name: postgresql-12
+         state: started
+
+      - name: Test Setup - Modify pg_hba.conf for host access.
+        become_user: postgres
+        postgresql_pg_hba:
+         dest: /var/lib/pgsql/12/data/pg_hba.conf
+         contype: host
+         address: 127.0.0.1/32
+         method: md5
+         state: present
+        register: _pg_hba
+
+      - name: Test Setup - Restart Postgres Service (RedHat).
+        service:
+         name: postgresql-12
+         state: restarted
+        when: _pg_hba.changed
+
+     when: ansible_os_family == "RedHat"
+     become: true
+
+   - name: Test Setup - Create root database.
+     become_user: postgres
+     postgresql_db:
+      name: "{{ db_root }}"
+      state: present
+
+   - name: Test Setup - Create root database user.
+     become_user: postgres
+     postgresql_user:
+      name: "{{ dbuser_root }}"
+      password: "{{ dbpass_root }}"
+      role_attr_flags: "SUPERUSER"

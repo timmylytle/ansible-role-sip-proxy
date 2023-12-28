@@ -1,0 +1,17 @@
+---
+# Create SystemD Service
+- name: Create RTPProxy systemD service file.
+  template:
+    src: rtpproxy.service.j2
+    dest: /etc/systemd/system/rtpproxy.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart rtpproxy
+
+- name: Enable RTPProxy service.
+  service:
+    name: rtpproxy
+    state: started
+    enabled: true

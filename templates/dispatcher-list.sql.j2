@@ -1,0 +1,6 @@
+{% for dict_item in dispatcher_destinations %}
+INSERT INTO dispatcher
+VALUES ('{{loop.index}}', '{{disp_set}}', 'sip:{{dict_item['ip']}}:{{dict_item['port']}};transport={{dict_item['protocol']}}', '{{dict_item['flags']}}', '{{dict_item['priority']}}', '{{dict_item['attrs']}}', '{{dict_item['name']}}')
+ON CONFLICT (id) DO
+UPDATE SET id='{{loop.index}}', setid='{{disp_set}}', destination='sip:{{dict_item['ip']}}:{{dict_item['port']}};transport={{dict_item['protocol']}}', flags='{{dict_item['flags']}}', priority='{{dict_item['priority']}}', attrs='{{dict_item['attrs']}}', description='{{dict_item['name']}}';
+{% endfor %}

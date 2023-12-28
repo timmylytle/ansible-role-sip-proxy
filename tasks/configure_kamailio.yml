@@ -1,0 +1,28 @@
+---
+# Create default config file
+- name: Create Kamailio config file.
+  template:
+    src: kamailio.cfg.j2
+    dest: "/usr/local/etc/kamailio/kamailio.cfg"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart kamailio
+
+# Create SystemD Service
+- name: Create Kamailio systemD service file.
+  template:
+    src: kamailio.service.j2
+    dest: /etc/systemd/system/kamailio.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart kamailio
+
+- name: Enable Kamailio service.
+  service:
+    name: kamailio
+    state: started
+    enabled: true

@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: timothylytle
+  description: ansible role to deploy SIP/RTP proxy behind NAT
+  role_name: sipproxy
+  min_ansible_version: 2.7
+  platforms:
+    - name: Ubuntu
+      versions:
+        - bionic
+        - xenial
+    - name: EL
+      versions:
+        - 7
+        - 8
+  license: MIT
+  galaxy_tags:
+    - sip
+dependencies: []

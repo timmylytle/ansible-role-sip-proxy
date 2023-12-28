@@ -1,0 +1,19 @@
+---
+debian_dependencies:
+  - git
+  - gcc
+  - g++
+  - flex
+  - bison
+  - libmysqlclient-dev
+  - make
+  - autoconf
+  - pkg-config
+  - libssl-dev
+  - libcurl4-openssl-dev
+  - libxml2
+  - libpcre3
+  - libpq5
+  - libpq-dev
+  - postgresql-client
+  - python3-pip

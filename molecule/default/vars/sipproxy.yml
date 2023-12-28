@@ -1,0 +1,18 @@
+---
+dispatcher_destinations: [{
+  "name": "molecule_test",
+  "ip": "10.0.0.1",
+  "port": "5080",
+  "protocol": "tcp",
+  "flags": "0",
+  "priority": "0",
+  "attrs": "",
+}]
+
+dbhost: "localhost"
+db_root: 'rootdb'
+dbuser_root: "dbuser"
+dbpass_root: "password"
+
+private_ip_address: "127.0.0.1"
+public_ip_address: "1.2.3.4"

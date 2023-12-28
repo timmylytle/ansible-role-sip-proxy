@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars_files:
+   - vars/sipproxy.yml
+
+  roles:
+   - role: ansible-role-sip-proxy
