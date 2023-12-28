@@ -1,6 +1,4 @@
 # ansible-role-sip-proxy
-
-# ansible-role-sip-proxy
 This ansible role installs a SIP and RTP proxy to load balance multiple SIP Servers. This is accomplished using open source sip server [Kamailio](https://github.com/kamailio/kamailio) and [RTPProxy](https://github.com/sippy/rtpproxy)
 
 ## Requirements
